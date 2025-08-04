@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-**Project Title**: Coffee Shop data Analysis    
+**Project Title**: Coffee Shop data Analysis  
+**Data Source**: download the Coffee Shop dataset from Kaggle.  
+**Dataset Link**: [Coffee Shop Dataset](https://www.kaggle.com/datasets/viramatv/coffee-shop-data)
 
 This project is designed to demonstrate SQL skills and techniques typically used by data analysts to explore, clean, and analyze retail sales data. The project involves setting up a coffee shop sales database, performing exploratory data analysis (EDA), and answering specific business questions through SQL queries. This project is ideal for those who are starting their journey in data analysis and want to build a solid foundation in SQL.
 
