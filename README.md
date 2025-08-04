@@ -19,209 +19,295 @@ This project is designed to demonstrate SQL skills and techniques typically used
 
 - **Database Creation**: The project starts by creating a database named `coffeeshop`.
 - **Table Creation**:
-  -A table named `orders` is created to store the sales data. The table structure includes columns for transaction ID, sale date, sale time, customer ID, gender, age, product category,
-   quantity sold, price per unit, cost of goods sold (COGS), and total sale amount.
+  - A table named `orders` is created to store the orders data. The table structure includes columns for row_id, order_id, created_at, item_id, quantity, cust_name, in_or_out.
+  - A table named `items` is created to store the items data. The table structure includes columns for item_id, recipe_id, item_name, item_cat, item_size, item_price.
+  - A table named `recipes` is created to store the recipes data. The table structure includes columns for row_id, recipe_id, ing_id, quantity.
+  - A table named `ingredients` is created to store the ingredients data. The table structure includes columns for ing_id, ing_name, ing_weight, ing_meas, ing_price.
+  - A table named `inventory` is created to store the inventory data. The table structure includes columns for inv_id, ing_id, quantity.
+  - A table named `staff` is created to store the staff data. The table structure includes columns for staff_id, first_name, last_name, position, sal_per_hour.
+  - A table named `shift` is created to store the shift data. The table structure includes columns for shift_id, day, start_time, end_time.
+  - A table named `rota` is created to store the rota data. The table structure includes columns for row_id, rota_id, date, shift_id, staff_id.
 
 ```sql
-CREATE DATABASE p1_retail_db;
+CREATE DATABASE coffee_shop;
 
-CREATE TABLE retail_sales
-(
-    transactions_id INT PRIMARY KEY,
-    sale_date DATE,	
-    sale_time TIME,
-    customer_id INT,	
-    gender VARCHAR(10),
-    age INT,
-    category VARCHAR(35),
-    quantity INT,
-    price_per_unit FLOAT,	
-    cogs FLOAT,
-    total_sale FLOAT
+CREATE TABLE orders(
+	row_id PRIMARY KEY INT,
+	order_id VARCHAR(10),
+	created_at TIMESTAMP,
+	item_id VARCHAR(10),
+	quantity INT,
+	cust_name VARCHAR(30),
+	in_or_out VARCHAR(5)
+);
+
+CREATE TABLE items(
+	item_id PRIMARY KEY VARCHAR(10),
+	recipe_id VARCHAR(20),
+	item_name VARCHAR(30),
+	item_cat VARCHAR(20),
+	item_size VARCHAR(15),
+	item_price NUMERIC(6,2)
+);
+
+CREATE TABLE recipes(
+	row_id PRIMARY KEY INT,
+	recipe_id VARCHAR(20),
+	ing_id VARCHAR(15),
+	quantity INT
+);
+
+CREATE TABLE ingredients(
+	ing_id PRIMARY KEY VARCHAR(10),
+	ing_name VARCHAR(50),
+	ing_weight INT,
+	ing_meas VARCHAR(15),
+	ing_price NUMERIC(6,2)
+);
+
+CREATE TABLE inventory(
+	inv_id PRIMARY KEY VARCHAR(15),
+	ing_id VARCHAR(15),
+	quantity INT
+);
+
+CREATE TABLE staff(
+	staff_id PRIMARY KEY VARCHAR(10),
+	First_name VARCHAR(20),
+	last_name VARCHAR(20),
+	position VARCHAR(15),
+	sal_per_hour NUMERIC(6,2)
+);
+
+CREATE TABLE shift(
+	shift_id PRIMARY KEY VARCHAR(15),
+	day VARCHAR(20),
+	start_time TIME,
+	end_time TIME
+);
+
+CREATE TABLE rota(
+	row_id PRIMARY KEY INT,
+	rota_id VARCHAR(10),
+	date DATE,
+	shift_id VARCHAR(15),
+	staff_id VARCHAR(15)
 );
 ```
 
-### 2. Data Exploration & Cleaning
+### 2. Data Cleaning
 
-- **Record Count**: Determine the total number of records in the dataset.
-- **Customer Count**: Find out how many unique customers are in the dataset.
-- **Category Count**: Identify all unique product categories in the dataset.
-- **Null Value Check**: Check for any null values in the dataset and delete records with missing data.
+- **Null Value Check**: Check for any null values in the dataset and delete records with unnecessary data.
 
 ```sql
-SELECT COUNT(*) FROM retail_sales;
-SELECT COUNT(DISTINCT customer_id) FROM retail_sales;
-SELECT DISTINCT category FROM retail_sales;
+SELECT * FROM orders
+FULL JOIN items on orders.item_id = items.item_id
+WHERE items.item_id IS NULL OR orders.item_id IS NULL;
 
-SELECT * FROM retail_sales
-WHERE 
-    sale_date IS NULL OR sale_time IS NULL OR customer_id IS NULL OR 
-    gender IS NULL OR age IS NULL OR category IS NULL OR 
-    quantity IS NULL OR price_per_unit IS NULL OR cogs IS NULL;
-
-DELETE FROM retail_sales
-WHERE 
-    sale_date IS NULL OR sale_time IS NULL OR customer_id IS NULL OR 
-    gender IS NULL OR age IS NULL OR category IS NULL OR 
-    quantity IS NULL OR price_per_unit IS NULL OR cogs IS NULL;
+DELETE FROM orders
+WHERE item_id NOT IN(
+	select item_id from items
+);
 ```
 
 ### 3. Data Analysis & Findings
 
 The following SQL queries were developed to answer specific business questions:
 
-1. **Write a SQL query to retrieve all columns for sales made on '2022-11-05**:
-```sql
-SELECT *
-FROM retail_sales
-WHERE sale_date = '2022-11-05';
-```
-
-2. **Write a SQL query to retrieve all transactions where the category is 'Clothing' and the quantity sold is more than 4 in the month of Nov-2022**:
+1. **Total Orders: Counted all customer orders to gauge business activity**:
 ```sql
 SELECT 
-  *
-FROM retail_sales
-WHERE 
-    category = 'Clothing'
-    AND 
-    TO_CHAR(sale_date, 'YYYY-MM') = '2022-11'
-    AND
-    quantity >= 4
+	COUNT(DISTINCT order_id) AS total_order 
+FROM orders;
 ```
 
-3. **Write a SQL query to calculate the total sales (total_sale) for each category.**:
+2. **Total Sales: Calculated the total revenue generated**:
+```sql
+SELECT  
+	SUM(item_price) sales 
+FROM orders
+JOIN items ON orders.item_id = items.item_id;
+```
+
+3. **Total Items Sold: Summarized the variety and number of items sold**:
 ```sql
 SELECT 
-    category,
-    SUM(total_sale) as net_sale,
-    COUNT(*) as total_orders
-FROM retail_sales
+	item_name,
+	COUNT(*) AS sold
+FROM orders o
+JOIN items i ON o.item_id=i.item_id
 GROUP BY 1
+ORDER BY 2 DESC;
 ```
 
-4. **Write a SQL query to find the average age of customers who purchased items from the 'Beauty' category.**:
-```sql
-SELECT
-    ROUND(AVG(age), 2) as avg_age
-FROM retail_sales
-WHERE category = 'Beauty'
-```
-
-5. **Write a SQL query to find all transactions where the total_sale is greater than 1000.**:
-```sql
-SELECT * FROM retail_sales
-WHERE total_sale > 1000
-```
-
-6. **Write a SQL query to find the total number of transactions (transaction_id) made by each gender in each category.**:
+4. **Average Order Value: Determined the average revenue per order**:
 ```sql
 SELECT 
-    category,
-    gender,
-    COUNT(*) as total_trans
-FROM retail_sales
-GROUP 
-    BY 
-    category,
-    gender
-ORDER BY 1
+	ROUND(SUM(item_price)/COUNT(DISTINCT order_id),2) AS avg_order_value
+FROM orders o
+JOIN items i ON o.item_id=i.item_id
+ORDER BY 1;
 ```
 
-7. **Write a SQL query to calculate the average sale for each month. Find out best selling month in each year**:
+5. **Top Selling Items: Identified the most popular items**:
 ```sql
 SELECT 
-       year,
-       month,
-    avg_sale
-FROM 
-(    
-SELECT 
-    EXTRACT(YEAR FROM sale_date) as year,
-    EXTRACT(MONTH FROM sale_date) as month,
-    AVG(total_sale) as avg_sale,
-    RANK() OVER(PARTITION BY EXTRACT(YEAR FROM sale_date) ORDER BY AVG(total_sale) DESC) as rank
-FROM retail_sales
-GROUP BY 1, 2
-) as t1
-WHERE rank = 1
-```
-
-8. **Write a SQL query to find the top 5 customers based on the highest total sales **:
-```sql
-SELECT 
-    customer_id,
-    SUM(total_sale) as total_sales
-FROM retail_sales
+	item_name, 
+	COUNT(*) AS sold
+FROM orders o
+LEFT JOIN items i on i.item_id = o.item_id
 GROUP BY 1
-ORDER BY 2 DESC
-LIMIT 5
+ORDER BY 2 DESC;
 ```
 
-9. **Write a SQL query to find the number of unique customers who purchased items from each category.**:
+6. **Orders by Hour: Examined the distribution of orders throughout the day**:
 ```sql
 SELECT 
-    category,    
-    COUNT(DISTINCT customer_id) as cnt_unique_cs
-FROM retail_sales
-GROUP BY category
+	DATE(created_at),
+	TO_CHAR(created_at, 'Day') AS day,
+	EXTRACT(HOUR FROM created_at) AS hour,
+	COUNT(*) AS order_count
+FROM orders o
+LEFT JOIN items i ON o.item_id = i.item_id
+GROUP BY 
+	GROUPING SETS(
+			(1,2,3),
+			(1,2)
+	)
+ORDER BY 1,3;
 ```
 
-10. **Write a SQL query to create each shift and number of orders (Example Morning <12, Afternoon Between 12 & 17, Evening >17)**:
+7. **Sales by Hour: Analyzed hourly revenue trends**:
 ```sql
-WITH hourly_sale
-AS
-(
-SELECT *,
-    CASE
-        WHEN EXTRACT(HOUR FROM sale_time) < 12 THEN 'Morning'
-        WHEN EXTRACT(HOUR FROM sale_time) BETWEEN 12 AND 17 THEN 'Afternoon'
-        ELSE 'Evening'
-    END as shift
-FROM retail_sales
+SELECT 
+	DATE(created_at),
+	TO_CHAR(created_at,'day') AS day,
+	EXTRACT(HOUR FROM created_at) AS hour,
+	SUM(item_price) AS sales
+FROM orders o
+LEFT JOIN items i ON o.item_id = i.item_id
+GROUP BY
+	GROUPING SETS(
+			(1,2,3),
+			(1,2)
+	)
+ORDER BY 1,3;
+```
+
+8. **Dine in vs take out orders**:
+```sql
+SELECT 
+	in_or_out,
+	COUNT(*) orders
+FROM orders o 
+LEFT JOIN items i ON o.item_id = i.item_id
+WHERE in_or_out IS NOT NULL
+AND in_or_out NOT LIKE ' '
+GROUP BY 1;
+```
+
+9. **Cost of each item: Estimated cost of each item sold**:
+```sql
+WITH ingredient_used AS(
+	SELECT 
+		i.item_id,
+		item_name,
+		item_size,
+		r.recipe_id,
+		item_price,
+		r.quantity,
+		(SELECT ing_weight FROM ingredients WHERE ing_id=ing.ing_id),
+		(SELECT ing_meas FROM ingredients WHERE ing_id=ing.ing_id),
+		(SELECT ing_price FROM ingredients WHERE ing_id=ing.ing_id)
+	FROM items i 
+	JOIN recipes r ON i.recipe_id = r.recipe_id
+	JOIN ingredients ing ON r.ing_id = ing.ing_id
 )
 SELECT 
-    shift,
-    COUNT(*) as total_orders    
-FROM hourly_sale
-GROUP BY shift
+	item_name||' '||item_size AS name_size,
+	ROUND(SUM((quantity/ing_weight::NUMERIC)*ing_price),2) AS item_cost,
+	item_price
+FROM ingredient_used
+GROUP BY 1,3;
 ```
+
+10. **Identified ingredients needing replenishment based on inventory levels, if inventory usage more than 70%, then re-ordering is needed**:
+```sql
+WITH inventory_stock AS(
+	SELECT 
+		ing.ing_id,
+		ing_name,
+		SUM(r.quantity) AS inv_used,
+		(SELECT ing_weight*quantity AS inventory FROM ingredients
+		LEFT JOIN inventory ON ingredients.ing_id = inventory.ing_id
+		WHERE ingredients.ing_id = ing.ing_id),
+		(SELECT ing_meas AS measures FROM ingredients WHERE ing_id=ing.ing_id)
+	FROM orders o
+	JOIN items i ON o.item_id= i.item_id
+	JOIN recipes r ON i.recipe_id = r.recipe_id
+	JOIN ingredients ing ON r.ing_id = ing.ing_id
+	GROUP BY 1,2
+	ORDER BY 1
+)
+SELECT
+	*,
+	ROUND((inv_used/inventory::NUMERIC)*100.0,2) AS usage_stock_inventory_perc,
+	CASE
+		WHEN round((inv_used/inventory::NUMERIC)*100.0,2) >70 THEN 'needed'
+		ELSE 'not yet'
+	END AS re_order
+FROM inventory_stock;
+```
+
+11. **Hours Worked by Staff Member: Broke down hours worked by individual employees**:
+```sql
+SELECT
+  first_name,
+  last_name,
+  SUM(EXTRACT(HOUR FROM end_time - start_time)) AS hours_worked
+FROM rota
+JOIN shift ON rota.shift_id = shift.shift_id
+JOIN staff ON rota.staff_id = staff.staff_id
+GROUP BY 1,2
+ORDER BY 3 DESC;
+```
+
+12. **Cost per Staff Member: Analyzed salary expenses per employee**:
+```sql
+SELECT
+  first_name,
+  last_name,
+  SUM(
+  sal_per_hour*
+  EXTRACT(HOUR FROM end_time - start_time)) AS total_salary
+FROM rota
+JOIN shift ON rota.shift_id = shift.shift_id
+JOIN staff ON rota.staff_id = staff.staff_id
+GROUP BY 1,2
+ORDER BY 3 DESC;
+```
+
 
 ## Findings
 
-- **Customer Demographics**: The dataset includes customers from various age groups, with sales distributed across different categories such as Clothing and Beauty.
-- **High-Value Transactions**: Several transactions had a total sale amount greater than 1000, indicating premium purchases.
-- **Sales Trends**: Monthly analysis shows variations in sales, helping identify peak seasons.
-- **Customer Insights**: The analysis identifies the top-spending customers and the most popular product categories.
+- **Sales & Operational Performance**: This analysis helps measure business performance by evaluating sales trends, customer behavior, and operational timing. It supports data-driven decisions such as promotional timing, menu optimization, and customer targeting strategies.
+- **Cost & Inventory Management**: This analysis supports cost control and inventory efficiency. Understanding item costs and current stock levels helps ensure profitability and avoid operational disruption due to stockouts or overstocking.
+- **Staff Performance & Labor Costs**: Labor data allows management to evaluate staff productivity and optimize workforce planning. Monitoring costs and hours per staff member helps reduce overspending and supports fair and efficient scheduling.
 
 ## Reports
 
-- **Sales Summary**: A detailed report summarizing total sales, customer demographics, and category performance.
-- **Trend Analysis**: Insights into sales trends across different months and shifts.
-- **Customer Insights**: Reports on top customers and unique customer counts per category.
+- **Sales Summary**: Sales trends highlight peak hours and best performing products.
+- **Inventory Analysis**: Inventory analysis reveals areas needing immediate restocking and potential for waste reduction.
+- **Labor Cost Breakdown**: Labor cost breakdown indicates opportunities for cost optimization and better shift planning.
 
 ## Conclusion
 
-This project serves as a comprehensive introduction to SQL for data analysts, covering database setup, data cleaning, exploratory data analysis, and business-driven SQL queries. The findings from this project can help drive business decisions by understanding sales patterns, customer behavior, and product performance.
+This project serves as a comprehensive introduction to SQL for data analysts, covering database setup, data cleaning, exploratory data analysis, and business-driven SQL queries. The findings from this project can help drive business decisions by understanding sales patterns, operational performance, customer behavior, inventory management,staff performance and labour costs.
 
-## How to Use
-
-1. **Clone the Repository**: Clone this project repository from GitHub.
-2. **Set Up the Database**: Run the SQL scripts provided in the `database_setup.sql` file to create and populate the database.
-3. **Run the Queries**: Use the SQL queries provided in the `analysis_queries.sql` file to perform your analysis.
-4. **Explore and Modify**: Feel free to modify the queries to explore different aspects of the dataset or answer additional business questions.
-
-## Author - Zero Analyst
+## Author - Noval Rama Deanda
 
 This project is part of my portfolio, showcasing the SQL skills essential for data analyst roles. If you have any questions, feedback, or would like to collaborate, feel free to get in touch!
 
-### Stay Updated and Join the Community
-
-For more content on SQL, data analysis, and other data-related topics, make sure to follow me on social media and join our community:
-
-- **YouTube**: [Subscribe to my channel for tutorials and insights](https://www.youtube.com/@zero_analyst)
-- **Instagram**: [Follow me for daily tips and updates](https://www.instagram.com/zero_analyst/)
-- **LinkedIn**: [Connect with me professionally](https://www.linkedin.com/in/najirr)
-- **Discord**: [Join our community to learn and grow together](https://discord.gg/36h5f2Z5PK)
+- **LinkedIn**: [Connect with me professionally](https://www.linkedin.com/in/novalrama/)
 
 Thank you for your support, and I look forward to connecting with you!
